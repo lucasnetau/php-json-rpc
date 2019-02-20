@@ -104,9 +104,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
             }
             else
             {
-                $error = new Error();
-                $error->setCode($data['error']['code']);
-                $error->setMessage($data['error']['message']);
+                $error = new Error($data['error']['code'], $data['error']['message']);
                 if (isset($data['error']['data']))
                 {
                     $error->setData($data['error']['data']);
