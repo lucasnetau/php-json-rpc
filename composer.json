@@ -1,0 +1,20 @@
+{
+  "name": "edgetelemetrics/php-json-rpc",
+  "description": "JSON-RPC helper classes for PHP",
+  "keywords": ["json-rpc", "react"],
+  "license": "MIT",
+  "authors": [ { "name": "James Lucas", "email": "james@lucas.net.au" } ],
+  "type": "library",
+  "require": {
+    "php": ">=7.2",
+    "ext-json": "*",
+    "evenement/evenement": "^3.0",
+    "clue/ndjson-react": "^1.0"
+  },
+  "require-dev": {
+    "kelunik/fqn-check": "^0.1.3"
+  },
+  "autoload": {
+    "psr-4": {"EdgeTelemetrics\\JSON_RPC\\": "src/EdgeTelemetrics/JSON_RPC"}
+  }
+}
