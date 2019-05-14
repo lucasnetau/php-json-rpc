@@ -65,59 +65,52 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
     }
 
     //@TODO Handle json-rpc batch (array of data)
-    public function handleData($data)
+    public function handleData($input)
     {
-        if (!isset($data['jsonrpc']))
+        /** Check if we are batch request */
+        if (!isset($input[0]))
         {
-            throw new RuntimeException('Unable to decode. Missing required jsonrpc field');
+            $input = [$input];
         }
 
-        if ($data['jsonrpc'] != Notification::JSONRPC_VERSION)
-        {
-            throw new RuntimeException('Unknown JSON-RPC version string');
-        }
+        /** Process responses whether batch or individual one by one and emit it up the the higher levels */
+        foreach($input as $data) {
+            if (!isset($data['jsonrpc'])) {
+                throw new RuntimeException('Unable to decode. Missing required jsonrpc field');
+            }
 
-        if (isset($data['method']))
-        {
-            if (isset($data['id']))
-            {
-                $jsonrpc = new Request();
-                $jsonrpc->setId($data['id']);
+            if ($data['jsonrpc'] != Notification::JSONRPC_VERSION) {
+                throw new RuntimeException('Unknown JSON-RPC version string');
             }
-            else
-                {
-                $jsonrpc = new Notification();
-            }
-            $jsonrpc->setMethod($data['method']);
-            if (isset($data['params']))
-            {
-                $jsonrpc->setParams($data['params']);
-            }
-        }
-        elseif (isset($data['result']) || isset($data['error']))
-        {
-            $jsonrpc = new Response();
-            $jsonrpc->setId($data['id']);
-            if (isset($data['result']))
-            {
-                $jsonrpc->setResult($data['result']);
-            }
-            else
-            {
-                $error = new Error($data['error']['code'], $data['error']['message']);
-                if (isset($data['error']['data']))
-                {
-                    $error->setData($data['error']['data']);
+
+            if (isset($data['method'])) {
+                if (isset($data['id'])) {
+                    $jsonrpc = new Request();
+                    $jsonrpc->setId($data['id']);
+                } else {
+                    $jsonrpc = new Notification();
                 }
-                $jsonrpc->setError($error);
+                $jsonrpc->setMethod($data['method']);
+                if (isset($data['params'])) {
+                    $jsonrpc->setParams($data['params']);
+                }
+            } elseif (isset($data['result']) || isset($data['error'])) {
+                $jsonrpc = new Response();
+                $jsonrpc->setId($data['id']);
+                if (isset($data['result'])) {
+                    $jsonrpc->setResult($data['result']);
+                } else {
+                    $error = new Error($data['error']['code'], $data['error']['message']);
+                    if (isset($data['error']['data'])) {
+                        $error->setData($data['error']['data']);
+                    }
+                    $jsonrpc->setError($error);
+                }
+            } else {
+                throw new RuntimeException('Unable to decode json rpc packet');
             }
+            $this->emit('data', [$jsonrpc]);
         }
-        else
-        {
-            throw new RuntimeException('Unable to decode json rpc packet');
-        }
-
-        $this->emit('data', [$jsonrpc]);
     }
 
     /** @internal */
