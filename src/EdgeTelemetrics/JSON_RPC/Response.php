@@ -2,7 +2,10 @@
 
 namespace EdgeTelemetrics\JSON_RPC;
 
-class Response implements \JsonSerializable {
+use \JsonSerializable;
+use \RuntimeException;
+
+class Response implements JsonSerializable {
 
     const JSONRPC_VERSION = '2.0';
 
@@ -11,7 +14,7 @@ class Response implements \JsonSerializable {
      */
     protected $id;
 
-    protected $result;
+    protected $result = null;
 
     /**
      * @var Error
@@ -31,7 +34,7 @@ class Response implements \JsonSerializable {
     public function setResult($result)
     {
         $this->result = $result;
-        unset($this->error); //Error must not exist if call is successful
+        $this->error = null; //Error must not exist if call is successful
     }
 
     public function getResult()
@@ -47,7 +50,7 @@ class Response implements \JsonSerializable {
     public function setError(Error $error)
     {
         $this->error = $error;
-        unset($this->result); //Result must not exist if an error is set
+        $this->result = null; //Result must not exist if an error is set
     }
 
     public function getError()
@@ -77,7 +80,7 @@ class Response implements \JsonSerializable {
         }
         else
         {
-            throw new \RuntimeException('Response must be successful or error state');
+            throw new RuntimeException('Response must be successful or error state');
         }
         return $record;
     }
