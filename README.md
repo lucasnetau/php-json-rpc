@@ -4,6 +4,8 @@ This library contains classes to construct JSON RPC notification, request, respo
 
 Additionally there is a ReactPHP stream decoder included which will process JSON RPC request and responses encoded via NDJSON.
 
+https://www.jsonrpc.org/specification
+
 # Quickstart
 
 ## Create a Request on the client
