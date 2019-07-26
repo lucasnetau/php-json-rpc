@@ -7,7 +7,7 @@
   "type": "library",
   "require": {
     "php": ">=7.2",
-    "ext-json": "*",
+    "ext-json": "*"
   },
   "suggest": {
     "evenement/evenement": "Used by the React Stream Decoder to emit events",
@@ -19,4 +19,4 @@
   "autoload": {
     "psr-4": {"EdgeTelemetrics\\JSON_RPC\\": "src/"}
   }
-},
+}
