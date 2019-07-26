@@ -2,85 +2,143 @@
 
 namespace EdgeTelemetrics\JSON_RPC;
 
-use \JsonSerializable;
-use \RuntimeException;
+use JsonSerializable;
+use RuntimeException;
 
+use function is_float;
+use function is_string;
+use function is_int;
+use function is_null;
+
+/**
+ * Class Response
+ * @package EdgeTelemetrics\JSON_RPC
+ */
 class Response implements JsonSerializable {
-
-    const JSONRPC_VERSION = '2.0';
-
     /**
      * @var string|int|null
      */
     protected $id;
 
+    /** @var mixed $result  */
     protected $result = null;
 
     /**
-     * @var Error
+     * Response constructor.
+     * @param $id
+     * @param null $result
      */
-    protected $error;
-
-    public function setId($id)
+    public function __construct($id, $result = null)
     {
-        $this->id = $id;
+        $this->setId($id);
+
+        if ($result instanceof Error)
+        {
+            $this->setError($result);
+        }
+        else
+        {
+            $this->setResult($result);
+        }
     }
 
+    /**
+     * Create a JSONRPC response from a request object
+     * @param Request $request
+     * @return Response
+     */
+    static public function createFromRequest(Request $request)
+    {
+        return new self($request->getId());
+    }
+
+    /**
+     * Set the id for the request. This is used between the Client and Server to correlate requests with responses.
+     * @param string|float|null $id
+     */
+    public function setId($id)
+    {
+        /** JSONRPC Spec - Numbers SHOULD NOT contain fractional parts */
+        if (is_float($id)) {
+            $id = (int)$id;
+        }
+        /** String, Number, or NULL value  */
+        if (is_string($id) || is_int($id) || is_null($id)) {
+            $this->id = $id;
+        } else {
+            throw new RuntimeException('Invalid Id format. Must be string, number or null');
+        }
+    }
+
+    /**
+     * @return int|string|null
+     */
     public function getId()
     {
         return $this->id;
     }
 
+    /**
+     * @param $result
+     */
     public function setResult($result)
     {
         $this->result = $result;
-        $this->error = null; //Error must not exist if call is successful
     }
 
+    /**
+     * @return mixed
+     */
     public function getResult()
     {
         return $this->result;
     }
 
+    /**
+     * @return bool
+     */
     public function isSuccess()
     {
-        return (null !== $this->result);
+        return (!$this->isError());
     }
 
+    /**
+     * @param Error $error
+     */
     public function setError(Error $error)
     {
-        $this->error = $error;
-        $this->result = null; //Result must not exist if an error is set
+        $this->result = $error;
     }
 
-    public function getError()
+    /**
+     * @return Error|void
+     */
+    public function getError() : Error
     {
-        return $this->error;
+        if ($this->isError()) {
+            return $this->result;
+        }
     }
 
+    /**
+     * @return bool
+     */
     public function isError()
     {
-        return (null !== $this->error);
+        return ($this->result instanceof Error);
     }
 
+    /**
+     * @return mixed
+     */
     public function jsonSerialize()
     {
-        $record = ['jsonrpc' => self::JSONRPC_VERSION];
-        if (null !== $this->id)
-        {
-            $record['id'] = $this->id;
-        }
-        if (null !== $this->result)
-        {
+        $record = ['jsonrpc' => Notification::JSONRPC_VERSION];
+        $record['id'] = $this->id;
+        if ($this->isError()) {
+            $record['error'] = $this->result;
+        } else {
             $record['result'] = $this->result;
-        }
-        elseif(null !== $this->error)
-        {
-            $record['error'] = $this->error;
-        }
-        else
-        {
-            throw new RuntimeException('Response must be successful or error state');
         }
         return $record;
     }

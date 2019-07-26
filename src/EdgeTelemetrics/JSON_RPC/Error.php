@@ -2,18 +2,36 @@
 
 namespace EdgeTelemetrics\JSON_RPC;
 
-class Error implements \JsonSerializable
+use JsonSerializable;
+
+/**
+ * Class Error - Representation of RPC Error
+ * @package EdgeTelemetrics\JSON_RPC
+ */
+class Error implements JsonSerializable
 {
-    /**
-     * @var int
-     */
+    /** Reserved error codes */
+    const PARSE_ERROR = -32700;
+    const INVALID_REQUEST = -32600;
+    const METHOD_NOT_FOUND = -32601;
+    const INVALID_PARAMS = -32602;
+    const INTERNAL_ERROR = -32603;
+
+    const ERROR_MSG = [
+        self::PARSE_ERROR => "Parse error",
+        self::INVALID_REQUEST => "Invalid Request",
+        self::METHOD_NOT_FOUND => "Method not found",
+        self::INVALID_PARAMS => "Invalid params",
+        self::INTERNAL_ERROR => "Internal error",
+    ];
+
+    /** @var int A Number that indicates the error type that occurred. */
     protected $code;
 
-    /**
-     * @var string
-     */
+    /** @var string A String providing a short description of the error. */
     protected $message;
 
+    /** @var mixed Additional information about the error */
     protected $data;
 
     public function __construct(int $code, string $message, $data = null)

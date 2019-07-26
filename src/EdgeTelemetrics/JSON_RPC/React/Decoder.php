@@ -6,6 +6,7 @@ use Evenement\EventEmitter;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
+use Exception;
 use RuntimeException;
 use Clue\React\NDJson\Decoder as NDJsonDecoder;
 use EdgeTelemetrics\JSON_RPC\Notification;
@@ -23,8 +24,15 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
      */
     protected $ndjson_decoder;
 
+    /**
+     * @var bool Flag if stream is closed
+     */
     private $closed = false;
 
+    /**
+     * Decoder constructor.
+     * @param ReadableStreamInterface $input
+     */
     public function __construct(ReadableStreamInterface $input)
     {
         $this->ndjson_decoder = new NDJsonDecoder($input, true);
@@ -35,6 +43,9 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
         $this->ndjson_decoder->on('close', array($this, 'close'));
     }
 
+    /**
+     * Close the stream
+     */
     public function close()
     {
         $this->closed = true;
@@ -43,28 +54,45 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
         $this->removeAllListeners();
     }
 
+    /**
+     * @return bool
+     */
     public function isReadable()
     {
         return $this->ndjson_decoder->isReadable();
     }
 
+    /**
+     * Pause
+     */
     public function pause()
     {
         $this->ndjson_decoder->pause();
     }
 
+    /**
+     * Resume
+     */
     public function resume()
     {
         $this->ndjson_decoder->resume();
     }
 
+    /**
+     * Pipe output between up and $dest
+     * @param WritableStreamInterface $dest
+     * @param array $options
+     * @return WritableStreamInterface
+     */
     public function pipe(WritableStreamInterface $dest, array $options = array())
     {
         Util::pipe($this, $dest, $options);
         return $dest;
     }
 
-    //@TODO Handle json-rpc batch (array of data)
+    /**
+     * @param $input
+     */
     public function handleData($input)
     {
         /** Check if we are batch request */
@@ -85,27 +113,15 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
 
             if (isset($data['method'])) {
                 if (isset($data['id'])) {
-                    $jsonrpc = new Request();
-                    $jsonrpc->setId($data['id']);
+                    $jsonrpc = new Request($data['method'], $data['params'] ?? [], $data['id']);
                 } else {
-                    $jsonrpc = new Notification();
+                    $jsonrpc = new Notification($data['method'], $data['params']);
                 }
-                $jsonrpc->setMethod($data['method']);
-                if (isset($data['params'])) {
-                    $jsonrpc->setParams($data['params']);
-                }
-            } elseif (isset($data['result']) || isset($data['error'])) {
-                $jsonrpc = new Response();
-                $jsonrpc->setId($data['id']);
-                if (isset($data['result'])) {
-                    $jsonrpc->setResult($data['result']);
-                } else {
-                    $error = new Error($data['error']['code'], $data['error']['message']);
-                    if (isset($data['error']['data'])) {
-                        $error->setData($data['error']['data']);
-                    }
-                    $jsonrpc->setError($error);
-                }
+            } elseif (isset($data['result'])) {
+                $jsonrpc = new Response($data['id'], $data['result']);
+            } elseif (isset($data['error'])) {
+                $error = new Error($data['error']['code'], $data['error']['message'], $data['error']['data'] ?? null);
+                $jsonrpc = new Response($data['id'], $error);
             } else {
                 throw new RuntimeException('Unable to decode json rpc packet');
             }
@@ -122,8 +138,11 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
         }
     }
 
-    /** @internal */
-    public function handleError(\Exception $error)
+    /**
+     * @param Exception $error
+     * @internal
+     */
+    public function handleError(Exception $error)
     {
         $this->emit('error', array($error));
         $this->close();
