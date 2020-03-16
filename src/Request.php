@@ -32,7 +32,12 @@ class Request extends Notification implements JsonSerializable {
     public function __construct(string $method, array $params = [], $id = null)
     {
         parent::__construct($method, $params);
-        $this->setId($id);
+        /** If the ID is explicitly set to NULL then we accept that, however if no value for ID was passed to the constructor we generate an ID */
+        if (3 === func_num_args()) {
+            $this->setId($id);
+        } else {
+            $this->setId(bin2hex(random_bytes(5)));
+        }
     }
 
     /**
@@ -49,7 +54,7 @@ class Request extends Notification implements JsonSerializable {
         if (is_string($id) || is_int($id) || is_null($id)) {
             $this->id = $id;
         } else {
-            throw new RuntimeException('Invalid Id format. Must be string, number or null');
+            throw new RuntimeException('Invalid Id format. Must be a string, number, or null');
         }
     }
 
