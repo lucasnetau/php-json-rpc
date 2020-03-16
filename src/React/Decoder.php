@@ -112,7 +112,8 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
             }
 
             if (isset($data['method'])) {
-                if (isset($data['id'])) {
+                // If the ID field is contained in the request even if NULL then we consider it to be Request
+                if (isset($data['id']) || array_key_exists('id', $data)) {
                     $jsonrpc = new Request($data['method'], $data['params'] ?? [], $data['id']);
                 } else {
                     $jsonrpc = new Notification($data['method'], $data['params']);
