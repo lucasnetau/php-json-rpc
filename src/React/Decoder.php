@@ -20,22 +20,23 @@ use EdgeTelemetrics\JSON_RPC\Error;
 class Decoder extends EventEmitter implements ReadableStreamInterface
 {
     /**
-     * @var \Clue\React\NDJson\Decoder
+     * @var NDJsonDecoder
      */
-    protected $ndjson_decoder;
+    protected NDJsonDecoder $ndjson_decoder;
 
     /**
      * @var bool Flag if stream is closed
      */
-    private $closed = false;
+    private bool $closed = false;
 
     /**
      * Decoder constructor.
      * @param ReadableStreamInterface $input
+     * @param int $maxLength Max length of a JSON line
      */
-    public function __construct(ReadableStreamInterface $input)
+    public function __construct(ReadableStreamInterface $input, int $maxLength = 65536)
     {
-        $this->ndjson_decoder = new NDJsonDecoder($input, true);
+        $this->ndjson_decoder = new NDJsonDecoder($input, true, 512, 0, $maxLength);
 
         $this->ndjson_decoder->on('data', array($this, 'handleData'));
         $this->ndjson_decoder->on('end', array($this, 'handleEnd'));
@@ -46,7 +47,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
     /**
      * Close the stream
      */
-    public function close()
+    public function close() : void
     {
         $this->closed = true;
         $this->ndjson_decoder->close();
@@ -57,7 +58,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
     /**
      * @return bool
      */
-    public function isReadable()
+    public function isReadable() : bool
     {
         return $this->ndjson_decoder->isReadable();
     }
@@ -65,7 +66,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
     /**
      * Pause
      */
-    public function pause()
+    public function pause() : void
     {
         $this->ndjson_decoder->pause();
     }
@@ -73,7 +74,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
     /**
      * Resume
      */
-    public function resume()
+    public function resume() : void
     {
         $this->ndjson_decoder->resume();
     }
