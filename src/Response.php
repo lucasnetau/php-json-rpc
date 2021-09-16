@@ -25,8 +25,8 @@ class Response implements JsonSerializable {
 
     /**
      * Response constructor.
-     * @param $id
-     * @param null $result
+     * @param string|int|float|null $id
+     * @param mixed|null $result
      */
     public function __construct($id, $result = null)
     {
@@ -45,16 +45,17 @@ class Response implements JsonSerializable {
     /**
      * Create a JSONRPC response from a request object
      * @param Request $request
+     * @param mixed|null $result
      * @return Response
      */
-    static public function createFromRequest(Request $request)
+    static public function createFromRequest(Request $request, $result = null): Response
     {
-        return new self($request->getId());
+        return new self($request->getId(), $result);
     }
 
     /**
      * Set the id for the request. This is used between the Client and Server to correlate requests with responses.
-     * @param string|float|null $id
+     * @param string|int|float|null $id
      */
     public function setId($id)
     {
@@ -97,7 +98,7 @@ class Response implements JsonSerializable {
     /**
      * @return bool
      */
-    public function isSuccess()
+    public function isSuccess(): bool
     {
         return (!$this->isError());
     }
@@ -123,15 +124,15 @@ class Response implements JsonSerializable {
     /**
      * @return bool
      */
-    public function isError()
+    public function isError(): bool
     {
         return ($this->result instanceof Error);
     }
 
     /**
-     * @return mixed
+     * @return array
      */
-    public function jsonSerialize()
+    public function jsonSerialize() : array
     {
         $record = ['jsonrpc' => Notification::JSONRPC_VERSION];
         $record['id'] = $this->id;
