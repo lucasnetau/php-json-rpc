@@ -2,13 +2,11 @@
 
 namespace EdgeTelemetrics\JSON_RPC;
 
-use JsonSerializable;
-
 /**
  * Class Notification
  * @package EdgeTelemetrics\JSON_RPC
  */
-class Notification implements JsonSerializable {
+class Notification implements RpcMessageInterface {
 
     /** @var string JSONRPC Version String */
     const JSONRPC_VERSION = '2.0';
@@ -16,12 +14,12 @@ class Notification implements JsonSerializable {
     /**
      * @var string A String containing the name of the method to be invoked
      */
-    protected $method = '';
+    protected string $method = '';
 
     /**
      * @var array A Structured value that holds the parameter values to be used during the invocation of the method
      */
-    protected $params = [];
+    protected array $params = [];
 
     /**
      * Notification constructor.

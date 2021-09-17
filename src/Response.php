@@ -2,7 +2,6 @@
 
 namespace EdgeTelemetrics\JSON_RPC;
 
-use JsonSerializable;
 use RuntimeException;
 
 use function is_float;
@@ -14,7 +13,7 @@ use function is_null;
  * Class Response
  * @package EdgeTelemetrics\JSON_RPC
  */
-class Response implements JsonSerializable {
+class Response implements RpcMessageInterface {
     /**
      * @var string|int|null
      */

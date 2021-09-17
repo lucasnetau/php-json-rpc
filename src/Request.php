@@ -2,7 +2,6 @@
 
 namespace EdgeTelemetrics\JSON_RPC;
 
-use JsonSerializable;
 use RuntimeException;
 
 use function is_float;
@@ -16,7 +15,7 @@ use function is_null;
  *
  * Request extends Notification and includes the Id property
  */
-class Request extends Notification implements JsonSerializable {
+class Request extends Notification implements RpcMessageInterface {
 
     /**
      * @var string|int|null An identifier established by the Client that MUST contain a String, Number, or NULL value
