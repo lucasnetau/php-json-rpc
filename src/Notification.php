@@ -7,10 +7,6 @@ namespace EdgeTelemetrics\JSON_RPC;
  * @package EdgeTelemetrics\JSON_RPC
  */
 class Notification implements RpcMessageInterface {
-
-    /** @var string JSONRPC Version String */
-    const JSONRPC_VERSION = '2.0';
-
     /**
      * @var string A String containing the name of the method to be invoked
      */
@@ -73,7 +69,7 @@ class Notification implements RpcMessageInterface {
      * Get all parameters
      * @return array
      */
-    public function getParams()
+    public function getParams() : array
     {
         return $this->params;
     }
@@ -85,7 +81,7 @@ class Notification implements RpcMessageInterface {
      */
     public function getParam(string $name)
     {
-        return $this->params[$name];
+        return $this->params[$name] ?? null;
     }
 
     /**

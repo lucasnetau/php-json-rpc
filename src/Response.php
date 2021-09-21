@@ -133,7 +133,7 @@ class Response implements RpcMessageInterface {
      */
     public function jsonSerialize() : array
     {
-        $record = ['jsonrpc' => Notification::JSONRPC_VERSION];
+        $record = ['jsonrpc' => self::JSONRPC_VERSION];
         $record['id'] = $this->id;
         if ($this->isError()) {
             $record['error'] = $this->result;
