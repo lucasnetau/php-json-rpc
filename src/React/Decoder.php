@@ -2,6 +2,7 @@
 
 namespace EdgeTelemetrics\JSON_RPC\React;
 
+use EdgeTelemetrics\JSON_RPC\RpcMessageInterface;
 use Evenement\EventEmitter;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
@@ -108,7 +109,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
                 throw new RuntimeException('Unable to decode. Missing required jsonrpc field');
             }
 
-            if ($data['jsonrpc'] != Notification::JSONRPC_VERSION) {
+            if ($data['jsonrpc'] != RpcMessageInterface::JSONRPC_VERSION) {
                 throw new RuntimeException('Unknown JSON-RPC version string');
             }
 
