@@ -66,9 +66,9 @@ class Request extends Notification implements RpcMessageInterface {
     }
 
     /**
-     * @return mixed
+     * @return array
      */
-    public function jsonSerialize()
+    public function jsonSerialize() : array
     {
         $record = parent::jsonSerialize();
         $record['id'] = $this->id;

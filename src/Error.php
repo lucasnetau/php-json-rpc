@@ -26,10 +26,10 @@ class Error implements JsonSerializable
     ];
 
     /** @var int A Number that indicates the error type that occurred. */
-    protected $code;
+    protected int $code;
 
     /** @var string A String providing a short description of the error. */
-    protected $message;
+    protected string $message;
 
     /** @var mixed Additional information about the error */
     protected $data;
@@ -46,7 +46,7 @@ class Error implements JsonSerializable
         $this->code = $code;
     }
 
-    public function getCode()
+    public function getCode(): int
     {
         return $this->code;
     }
@@ -56,7 +56,7 @@ class Error implements JsonSerializable
         $this->message = $message;
     }
 
-    public function getMessage()
+    public function getMessage(): string
     {
         return $this->message;
     }
@@ -71,10 +71,12 @@ class Error implements JsonSerializable
         return $this->data;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize() : array
     {
-        $record = ['code' => $this->code,
-            'message' => $this->message];
+        $record = [
+            'code' => $this->code,
+            'message' => $this->message
+        ];
 
         if (null !== $this->data)
         {

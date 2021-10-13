@@ -85,12 +85,14 @@ class Notification implements RpcMessageInterface {
     }
 
     /**
-     * @return mixed
+     * @return array
      */
-    public function jsonSerialize()
+    public function jsonSerialize() : array
     {
-        $record = ['jsonrpc' => self::JSONRPC_VERSION,
-            'method' => $this->method];
+        $record = [
+            'jsonrpc' => RpcMessageInterface::JSONRPC_VERSION,
+            'method' => $this->method
+        ];
         if (!empty($this->params))
         {
             $record['params'] = $this->params;
