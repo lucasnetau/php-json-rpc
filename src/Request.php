@@ -26,7 +26,7 @@ class Request extends Notification implements RpcMessageInterface {
      * Request constructor.
      * @param string $method
      * @param array $params
-     * @param null $id
+     * @param string|int|float|null $id
      */
     public function __construct(string $method, array $params = [], $id = null)
     {
@@ -41,13 +41,13 @@ class Request extends Notification implements RpcMessageInterface {
 
     /**
      * Set the id for the request. This is used between the Client and Server to correlate requests with responses.
-     * @param string|float|null $id
+     * @param string|int|float|null $id
      */
     public function setId($id)
     {
         /** JSONRPC Spec - Numbers SHOULD NOT contain fractional parts */
         if (is_float($id)) {
-            $id = (int)$id;
+            $id = (int)floor($id);
         }
         /** String, Number, or NULL value  */
         if (is_string($id) || is_int($id) || is_null($id)) {
