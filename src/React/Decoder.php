@@ -118,7 +118,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
                 if (isset($data['id']) || array_key_exists('id', $data)) {
                     $jsonrpc = new Request($data['method'], $data['params'] ?? [], $data['id']);
                 } else {
-                    $jsonrpc = new Notification($data['method'], $data['params']);
+                    $jsonrpc = new Notification($data['method'], $data['params'] ?? []);
                 }
             } elseif (isset($data['result'])) {
                 $jsonrpc = new Response($data['id'], $data['result']);
