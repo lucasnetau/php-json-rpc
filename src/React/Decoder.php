@@ -7,13 +7,13 @@ use Evenement\EventEmitter;
 use React\Stream\ReadableStreamInterface;
 use React\Stream\WritableStreamInterface;
 use React\Stream\Util;
-use Exception;
 use RuntimeException;
 use Clue\React\NDJson\Decoder as NDJsonDecoder;
 use EdgeTelemetrics\JSON_RPC\Notification;
 use EdgeTelemetrics\JSON_RPC\Request;
 use EdgeTelemetrics\JSON_RPC\Response;
 use EdgeTelemetrics\JSON_RPC\Error;
+use Throwable;
 use function array_key_exists;
 use function is_array;
 
@@ -134,7 +134,7 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
                 }
                 $this->emit('data', [$jsonrpc]);
             }
-        } catch (\Throwable $ex) {
+        } catch (Throwable $ex) {
             $this->handleError($ex);
         }
     }
@@ -149,10 +149,10 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
     }
 
     /**
-     * @param Exception $error
+     * @param Throwable $error
      * @internal
      */
-    public function handleError(Exception $error)
+    public function handleError(Throwable $error)
     {
         $this->emit('error', array($error));
         $this->close();
