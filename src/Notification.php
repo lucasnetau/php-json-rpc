@@ -32,7 +32,7 @@ class Notification implements RpcMessageInterface {
      * Set RPC method to be invoked
      * @param string $method
      */
-    public function setMethod(string $method)
+    public function setMethod(string $method): void
     {
         $this->method = $method;
     }
@@ -50,7 +50,7 @@ class Notification implements RpcMessageInterface {
      * Set and replace parameters
      * @param array $params
      */
-    public function setParams(array $params)
+    public function setParams(array $params): void
     {
         $this->params = $params;
     }
@@ -60,7 +60,7 @@ class Notification implements RpcMessageInterface {
      * @param string $name
      * @param $value
      */
-    public function setParam(string $name, $value)
+    public function setParam(string $name, $value): void
     {
         $this->params[$name] = $value;
     }
@@ -79,7 +79,7 @@ class Notification implements RpcMessageInterface {
      * @param string $name
      * @return mixed
      */
-    public function getParam(string $name)
+    public function getParam(string $name): mixed
     {
         return $this->params[$name] ?? null;
     }

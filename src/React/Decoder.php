@@ -16,6 +16,8 @@ use EdgeTelemetrics\JSON_RPC\Error;
 use Throwable;
 use function array_key_exists;
 use function is_array;
+use function is_int;
+use function is_string;
 
 /**
  * The Decoder / Parser reads from a NDJSON stream and emits JSON-RPC notifications/requests/responses
@@ -112,23 +114,38 @@ class Decoder extends EventEmitter implements ReadableStreamInterface
 
             /** Process responses whether batch or individual one by one and emit the jsonrpc */
             foreach ($input as $data) {
+                if (!is_array($data)) {
+                    throw new RuntimeException('Decoded JSON-RPC message is not an object');
+                }
+
                 if (!isset($data['jsonrpc']) || $data['jsonrpc'] !== RpcMessageInterface::JSONRPC_VERSION) {
                     throw new RuntimeException('Unknown or missing JSON-RPC version string');
                 }
 
                 if (isset($data['method'])) {
-                    // If the ID field is contained in the request even if NULL then we consider it to be Request
-                    if (isset($data['id']) || array_key_exists('id', $data)) {
-                        $jsonrpc = new Request($data['method'], $data['params'] ?? [], $data['id']);
-                    } else {
-                        $jsonrpc = new Notification($data['method'], $data['params'] ?? []);
+                    $params = $data['params'] ?? [];
+                    if (!is_array($params)) {
+                        throw new RuntimeException('Invalid JSON-RPC params: must be an array or object');
                     }
-                } elseif (isset($data['result'])) {
-                    $jsonrpc = new Response($data['id'], $data['result']);
-                } elseif (isset($data['error'])) {
+
+                    // If the ID field is contained in the request even if NULL then we consider it to be Request
+                    if (array_key_exists('id', $data)) {
+                        $jsonrpc = new Request($data['method'], $params, $data['id']);
+                    } else {
+                        $jsonrpc = new Notification($data['method'], $params);
+                    }
+                } elseif (array_key_exists('result', $data)) {
+                    $jsonrpc = new Response($data['id'] ?? null, $data['result']);
+                } elseif (array_key_exists('error', $data)) {
+                    if (!is_array($data['error'])
+                        || !is_int($data['error']['code'] ?? null)
+                        || !is_string($data['error']['message'] ?? null)
+                    ) {
+                        throw new RuntimeException('Invalid JSON-RPC error object');
+                    }
                     $error = new Error($data['error']['code'], $data['error']['message'],
                         $data['error']['data'] ?? null);
-                    $jsonrpc = new Response($data['id'], $error);
+                    $jsonrpc = new Response($data['id'] ?? null, $error);
                 } else {
                     throw new RuntimeException('Unable to decode json rpc packet, failed to identify Request, Response or Error record');
                 }

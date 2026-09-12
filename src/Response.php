@@ -5,6 +5,7 @@ namespace EdgeTelemetrics\JSON_RPC;
 use RuntimeException;
 
 use function is_float;
+use function is_finite;
 use function is_string;
 use function is_int;
 use function is_null;
@@ -24,10 +25,10 @@ class Response implements RpcMessageInterface {
 
     /**
      * Response constructor.
-     * @param string|int|float|null $id
+     * @param float|int|string|null $id
      * @param mixed|null $result
      */
-    public function __construct($id, $result = null)
+    public function __construct(float|int|string|null $id, mixed $result = null)
     {
         $this->setId($id);
 
@@ -47,7 +48,7 @@ class Response implements RpcMessageInterface {
      * @param mixed|null $result
      * @return Response
      */
-    static public function createFromRequest(Request $request, $result = null): Response
+    static public function createFromRequest(Request $request, mixed $result = null): Response
     {
         return new self($request->getId(), $result);
     }
@@ -60,7 +61,10 @@ class Response implements RpcMessageInterface {
     {
         /** JSONRPC Spec - Numbers SHOULD NOT contain fractional parts */
         if (is_float($id)) {
-            $id = (int)$id;
+            if (!is_finite($id) || $id < PHP_INT_MIN || $id > PHP_INT_MAX) {
+                throw new RuntimeException('Invalid Id format. Must be string, number or null');
+            }
+            $id = (int)floor($id);
         }
         /** String, Number, or NULL value  */
         if (is_string($id) || is_int($id) || is_null($id)) {
@@ -73,7 +77,7 @@ class Response implements RpcMessageInterface {
     /**
      * @return int|string|null
      */
-    public function getId()
+    public function getId(): int|string|null
     {
         return $this->id;
     }
@@ -105,19 +109,20 @@ class Response implements RpcMessageInterface {
     /**
      * @param Error $error
      */
-    public function setError(Error $error)
+    public function setError(Error $error): void
     {
         $this->result = $error;
     }
 
     /**
-     * @return Error|void
+     * @return Error|null
      */
-    public function getError() : Error
+    public function getError() : ?Error
     {
         if ($this->isError()) {
             return $this->result;
         }
+        return null;
     }
 
     /**

@@ -25,7 +25,7 @@ $packet = json_encode($request);
 //Process request
 
 // Create the response from the request to pre-fill ID
-$response = new Response::createFromRequest($request);
+$response = Response::createFromRequest($request);
 $response->setResult('pong');
 
 $packet = json_encode($response);

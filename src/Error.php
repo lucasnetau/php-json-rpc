@@ -32,7 +32,7 @@ class Error implements JsonSerializable
     protected string $message;
 
     /** @var mixed Additional information about the error */
-    protected $data;
+    protected mixed $data;
 
     public function __construct(int $code, string $message, $data = null)
     {
@@ -41,7 +41,7 @@ class Error implements JsonSerializable
         $this->setData($data);
     }
 
-    public function setCode(int $code)
+    public function setCode(int $code): void
     {
         $this->code = $code;
     }
@@ -51,7 +51,7 @@ class Error implements JsonSerializable
         return $this->code;
     }
 
-    public function setMessage(string $message)
+    public function setMessage(string $message): void
     {
         $this->message = $message;
     }
@@ -61,7 +61,7 @@ class Error implements JsonSerializable
         return $this->message;
     }
 
-    public function setData($data)
+    public function setData($data): void
     {
         $this->data = $data;
     }
