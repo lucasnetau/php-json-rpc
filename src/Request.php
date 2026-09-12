@@ -5,6 +5,7 @@ namespace EdgeTelemetrics\JSON_RPC;
 use RuntimeException;
 
 use function is_float;
+use function is_finite;
 use function is_string;
 use function is_int;
 use function is_null;
@@ -26,9 +27,9 @@ class Request extends Notification implements RpcMessageInterface {
      * Request constructor.
      * @param string $method
      * @param array $params
-     * @param string|int|float|null $id
+     * @param float|int|string|null $id
      */
-    public function __construct(string $method, array $params = [], $id = null)
+    public function __construct(string $method, array $params = [], float|int|string $id = null)
     {
         parent::__construct($method, $params);
         /** If the ID is explicitly set to NULL then we accept that, however if no value for ID was passed to the constructor we generate an ID */
@@ -43,10 +44,13 @@ class Request extends Notification implements RpcMessageInterface {
      * Set the id for the request. This is used between the Client and Server to correlate requests with responses.
      * @param string|int|float|null $id
      */
-    public function setId($id)
+    public function setId(string|int|float|null $id)
     {
         /** JSONRPC Spec - Numbers SHOULD NOT contain fractional parts */
         if (is_float($id)) {
+            if (!is_finite($id) || $id < PHP_INT_MIN || $id > PHP_INT_MAX) {
+                throw new RuntimeException('Invalid Id format. Must be a string, number, or null');
+            }
             $id = (int)floor($id);
         }
         /** String, Number, or NULL value  */
@@ -60,7 +64,7 @@ class Request extends Notification implements RpcMessageInterface {
     /**
      * @return int|string|null
      */
-    public function getId()
+    public function getId(): int|string|null
     {
         return $this->id;
     }
