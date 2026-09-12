@@ -15,9 +15,16 @@
   },
   "require-dev": {
     "clue/ndjson-react": "^1.2",
-    "evenement/evenement": "^3.0.1"
+    "evenement/evenement": "^3.0.2",
+    "phpunit/phpunit": "^13.3"
   },
   "autoload": {
     "psr-4": {"EdgeTelemetrics\\JSON_RPC\\": "src/"}
+  },
+  "autoload-dev": {
+    "psr-4": {"EdgeTelemetrics\\JSON_RPC\\Tests\\": "tests/"}
+  },
+  "scripts": {
+    "test": "phpunit"
   }
 }
