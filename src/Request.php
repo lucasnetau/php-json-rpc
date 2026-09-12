@@ -29,7 +29,7 @@ class Request extends Notification implements RpcMessageInterface {
      * @param array $params
      * @param float|int|string|null $id
      */
-    public function __construct(string $method, array $params = [], float|int|string $id = null)
+    public function __construct(string $method, array $params = [], null|float|int|string $id = null)
     {
         parent::__construct($method, $params);
         /** If the ID is explicitly set to NULL then we accept that, however if no value for ID was passed to the constructor we generate an ID */
