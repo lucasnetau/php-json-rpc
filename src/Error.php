@@ -32,13 +32,20 @@ class Error implements JsonSerializable
     protected string $message;
 
     /** @var mixed Additional information about the error */
-    protected mixed $data;
+    protected mixed $data = null;
+
+    /** @var bool Whether the data member was explicitly provided */
+    protected bool $hasData = false;
 
     public function __construct(int $code, string $message, $data = null)
     {
         $this->setCode($code);
         $this->setMessage($message);
-        $this->setData($data);
+
+        if (func_num_args() >= 3)
+        {
+            $this->setData($data);
+        }
     }
 
     public function setCode(int $code): void
@@ -64,6 +71,7 @@ class Error implements JsonSerializable
     public function setData($data): void
     {
         $this->data = $data;
+        $this->hasData = true;
     }
 
     public function getData()
@@ -78,7 +86,7 @@ class Error implements JsonSerializable
             'message' => $this->message
         ];
 
-        if (null !== $this->data)
+        if ($this->hasData)
         {
             $record['data'] = $this->data;
         }

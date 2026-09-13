@@ -68,12 +68,21 @@ class ErrorTest extends TestCase
         );
     }
 
-    public function testJsonSerializeIncludesExplicitNullDataValueAsOmitted(): void
+    public function testJsonSerializeIncludesExplicitNullDataValue(): void
     {
         $error = new Error(1, 'msg', null);
-        $serialized = $error->jsonSerialize();
 
-        $this->assertArrayNotHasKey('data', $serialized);
+        $this->assertSame(
+            ['code' => 1, 'message' => 'msg', 'data' => null],
+            $error->jsonSerialize()
+        );
+    }
+
+    public function testJsonSerializeOmitsDataWhenNotProvided(): void
+    {
+        $error = new Error(1, 'msg');
+
+        $this->assertArrayNotHasKey('data', $error->jsonSerialize());
     }
 
     public function testJsonEncodeRoundTripMatchesSerializedShape(): void
