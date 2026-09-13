@@ -174,26 +174,28 @@ class DecoderTest extends TestCase
         $this->assertSame(1, $this->events['close']);
     }
 
-    public function testMissingJsonrpcVersionEmitsErrorAndCloses(): void
+    public function testMissingJsonrpcVersionEmitsErrorWithoutClosing(): void
     {
         $decoder = $this->makeDecoder();
         $decoder->handleData(['method' => 'ping', 'id' => 1]);
 
         $this->assertCount(1, $this->events['error']);
         $this->assertStringContainsString('JSON-RPC version', $this->events['error'][0]->getMessage());
-        $this->assertFalse($decoder->isReadable());
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
     }
 
-    public function testWrongJsonrpcVersionEmitsErrorAndCloses(): void
+    public function testWrongJsonrpcVersionEmitsErrorWithoutClosing(): void
     {
         $decoder = $this->makeDecoder();
         $decoder->handleData(['jsonrpc' => '1.0', 'method' => 'ping', 'id' => 1]);
 
         $this->assertCount(1, $this->events['error']);
-        $this->assertFalse($decoder->isReadable());
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
     }
 
-    public function testUnknownMessageTypeEmitsErrorAndCloses(): void
+    public function testUnknownMessageTypeEmitsErrorWithoutClosing(): void
     {
         $decoder = $this->makeDecoder();
         $decoder->handleData(['jsonrpc' => '2.0', 'something' => 'else']);
@@ -201,37 +203,129 @@ class DecoderTest extends TestCase
         $this->assertCount(1, $this->events['error']);
         $this->assertStringContainsString('failed to identify', $this->events['error'][0]->getMessage());
         $this->assertSame([], $this->events['data']);
-        $this->assertFalse($decoder->isReadable());
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
     }
 
-    public function testInvalidParamsEmitsErrorAndCloses(): void
+    public function testInvalidScalarParamsEmitsErrorWithoutClosing(): void
     {
         $decoder = $this->makeDecoder();
         $decoder->handleData(['jsonrpc' => '2.0', 'method' => 'ping', 'params' => 'oops', 'id' => 1]);
 
         $this->assertCount(1, $this->events['error']);
         $this->assertStringContainsString('params', $this->events['error'][0]->getMessage());
-        $this->assertFalse($decoder->isReadable());
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
     }
 
-    public function testInvalidErrorObjectEmitsErrorAndCloses(): void
+    public function testNullParamsEmitsErrorWithoutClosing(): void
+    {
+        $decoder = $this->makeDecoder();
+        $decoder->handleData(['jsonrpc' => '2.0', 'method' => 'ping', 'params' => null, 'id' => 1]);
+
+        $this->assertSame([], $this->events['data']);
+        $this->assertCount(1, $this->events['error']);
+        $this->assertInstanceOf(RuntimeException::class, $this->events['error'][0]);
+        $this->assertStringContainsString('params', $this->events['error'][0]->getMessage());
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
+    }
+
+    public function testInvalidErrorObjectEmitsErrorWithoutClosing(): void
     {
         $decoder = $this->makeDecoder();
         $decoder->handleData(['jsonrpc' => '2.0', 'id' => 1, 'error' => ['message' => 'missing code']]);
 
         $this->assertCount(1, $this->events['error']);
         $this->assertStringContainsString('Invalid JSON-RPC error object', $this->events['error'][0]->getMessage());
-        $this->assertFalse($decoder->isReadable());
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
     }
 
-    public function testBatchContainingNonArrayElementEmitsErrorAndCloses(): void
+    public function testBatchContainingNonArrayElementEmitsErrorWithoutClosing(): void
     {
         $decoder = $this->makeDecoder();
         $decoder->handleData([['jsonrpc' => '2.0', 'method' => 'ping', 'id' => 1], 'oops']);
 
         $this->assertCount(1, $this->events['data']);
+        $this->assertInstanceOf(Request::class, $this->events['data'][0]);
         $this->assertCount(1, $this->events['error']);
-        $this->assertFalse($decoder->isReadable());
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
+    }
+
+    public function testEmptyBatchIsInvalidRequest(): void
+    {
+        $decoder = $this->makeDecoder();
+        $decoder->handleData([]);
+
+        $this->assertCount(1, $this->events['data']);
+        $message = $this->events['data'][0];
+        $this->assertInstanceOf(Response::class, $message);
+        $this->assertTrue($message->isError());
+        $this->assertNull($message->getId());
+        $this->assertInstanceOf(Error::class, $message->getError());
+        $this->assertSame(Error::INVALID_REQUEST, $message->getError()->getCode());
+        $this->assertSame(Error::ERROR_MSG[Error::INVALID_REQUEST], $message->getError()->getMessage());
+        $this->assertSame([], $this->events['error']);
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
+    }
+
+    public function testSingleRequestWithExtraZeroMemberDecodesAsRequest(): void
+    {
+        $decoder = $this->makeDecoder();
+        $decoder->handleData(['jsonrpc' => '2.0', 'method' => 'ping', 'id' => 9, 0 => 'extra']);
+
+        $this->assertCount(1, $this->events['data']);
+        $message = $this->events['data'][0];
+        $this->assertInstanceOf(Request::class, $message);
+        $this->assertSame('ping', $message->getMethod());
+        $this->assertSame(9, $message->getId());
+        $this->assertSame([], $this->events['error']);
+        $this->assertTrue($decoder->isReadable());
+    }
+
+    public function testBatchWithInvalidItemStillEmitsValidItemsAndStaysOpen(): void
+    {
+        $decoder = $this->makeDecoder();
+        $decoder->handleData([
+            ['jsonrpc' => '2.0', 'method' => 'first', 'id' => 1],
+            ['jsonrpc' => '1.0', 'method' => 'invalid', 'id' => 2],
+            ['jsonrpc' => '2.0', 'method' => 'last', 'id' => 3],
+        ]);
+
+        $this->assertCount(2, $this->events['data']);
+        $this->assertInstanceOf(Request::class, $this->events['data'][0]);
+        $this->assertSame('first', $this->events['data'][0]->getMethod());
+        $this->assertInstanceOf(Request::class, $this->events['data'][1]);
+        $this->assertSame('last', $this->events['data'][1]->getMethod());
+        $this->assertCount(1, $this->events['error']);
+        $this->assertTrue($decoder->isReadable());
+        $this->assertSame(0, $this->events['close']);
+    }
+
+    public function testNonEmptyMixedBatchEmitsEveryItemOnceInOrder(): void
+    {
+        $decoder = $this->makeDecoder();
+        $decoder->handleData([
+            ['jsonrpc' => '2.0', 'method' => 'ping', 'id' => 1],
+            ['jsonrpc' => '2.0', 'method' => 'notify'],
+            ['jsonrpc' => '2.0', 'id' => 1, 'result' => 'pong'],
+            ['jsonrpc' => '2.0', 'id' => 2, 'error' => ['code' => Error::METHOD_NOT_FOUND, 'message' => 'Method not found']],
+        ]);
+
+        $this->assertCount(4, $this->events['data']);
+        $this->assertInstanceOf(Request::class, $this->events['data'][0]);
+        $this->assertSame('ping', $this->events['data'][0]->getMethod());
+        $this->assertInstanceOf(Notification::class, $this->events['data'][1]);
+        $this->assertSame('notify', $this->events['data'][1]->getMethod());
+        $this->assertInstanceOf(Response::class, $this->events['data'][2]);
+        $this->assertSame('pong', $this->events['data'][2]->getResult());
+        $this->assertInstanceOf(Response::class, $this->events['data'][3]);
+        $this->assertSame(Error::METHOD_NOT_FOUND, $this->events['data'][3]->getError()->getCode());
+        $this->assertSame([], $this->events['error']);
+        $this->assertSame(0, $this->events['close']);
     }
 
     public function testCloseEmitsCloseAndMakesUnreadable(): void
@@ -289,6 +383,30 @@ class DecoderTest extends TestCase
         $this->assertSame([], $this->events['error']);
         $this->assertSame(1, $this->events['end']);
         $this->assertFalse($decoder->isReadable());
+    }
+
+    public function testEndToEndBatchWithInvalidItemKeepsStreamOpenAndProcessesNextLine(): void
+    {
+        $input = new ThroughStream();
+        $decoder = $this->makeDecoder($input);
+
+        $input->write(json_encode([
+            ['jsonrpc' => '2.0', 'method' => 'first', 'id' => 1],
+            ['jsonrpc' => '1.0', 'method' => 'invalid', 'id' => 2],
+            ['jsonrpc' => '2.0', 'method' => 'last', 'id' => 3],
+        ]) . "\n");
+        $input->write("{\"jsonrpc\":\"2.0\",\"method\":\"after\",\"id\":4}\n");
+        $input->end();
+
+        Loop::run();
+
+        $this->assertCount(3, $this->events['data']);
+        $this->assertSame('first', $this->events['data'][0]->getMethod());
+        $this->assertSame('last', $this->events['data'][1]->getMethod());
+        $this->assertSame('after', $this->events['data'][2]->getMethod());
+        $this->assertCount(1, $this->events['error']);
+        $this->assertSame(1, $this->events['end']);
+        $this->assertSame(1, $this->events['close']);
     }
 
     public function testEndToEndMalformedLineEmitsError(): void
